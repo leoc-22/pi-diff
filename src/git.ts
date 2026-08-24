@@ -63,6 +63,7 @@ export async function generateDiff(pi: ExtensionAPI, request: DiffRequest): Prom
   const args = [
     "diff",
     "--no-ext-diff",
+    "--no-textconv",
     "--no-color",
     "--src-prefix=a/",
     "--dst-prefix=b/",
@@ -89,6 +90,7 @@ export async function generateDiff(pi: ExtensionAPI, request: DiffRequest): Prom
         [
           "diff",
           "--no-index",
+          "--no-textconv",
           "--no-color",
           "--src-prefix=a/",
           "--dst-prefix=b/",

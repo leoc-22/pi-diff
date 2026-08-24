@@ -40,6 +40,29 @@ async function makeRepository(): Promise<string> {
 }
 
 describe("Git diff generation", () => {
+  it("disables configured text conversion for tracked and untracked diffs", async () => {
+    const calls: string[][] = [];
+    const fakePi = {
+      async exec(_command: string, args: string[]) {
+        calls.push(args);
+        if (args[0] === "ls-files") return { stdout: "", stderr: "", code: 1, killed: false };
+        return { stdout: "", stderr: "", code: args.includes("--no-index") ? 1 : 0, killed: false };
+      },
+    } as unknown as ExtensionAPI;
+
+    await generateDiff(fakePi, {
+      repositoryRoot: "/tmp/example",
+      cwd: "/tmp/example",
+      staged: false,
+      path: "untracked.txt",
+      pathIsFile: true,
+    });
+
+    const diffCalls = calls.filter((args) => args[0] === "diff");
+    expect(diffCalls).toHaveLength(2);
+    expect(diffCalls.every((args) => args.includes("--no-textconv"))).toBe(true);
+  });
+
   it("generates a working-tree diff for a selected path with spaces", async () => {
     const root = await makeRepository();
     const name = "space name.ts";
