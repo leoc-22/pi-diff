@@ -40,6 +40,35 @@ async function makeRepository(): Promise<string> {
 }
 
 describe("Git diff generation", () => {
+  it("treats a selected path containing wildcard characters literally", async () => {
+    const root = await makeRepository();
+    await writeFile(join(root, "*.txt"), "literal one\n");
+    await writeFile(join(root, "secret.txt"), "secret one\n");
+    await execFileAsync("git", ["add", "-A"], { cwd: root });
+    await execFileAsync("git", ["commit", "-qm", "initial"], { cwd: root });
+    await writeFile(join(root, "*.txt"), "literal two\n");
+    await writeFile(join(root, "secret.txt"), "secret two\n");
+
+    const request = await createDiffRequest(pi, root, { staged: false, path: "*.txt" });
+    const result = await generateDiff(pi, request);
+    expect(result.patch).toContain("diff --git a/*.txt b/*.txt");
+    expect(result.patch).not.toContain("secret.txt");
+  });
+
+  it("detects an untracked wildcard filename without matching tracked files", async () => {
+    const root = await makeRepository();
+    await writeFile(join(root, "secret.txt"), "secret one\n");
+    await execFileAsync("git", ["add", "--", "secret.txt"], { cwd: root });
+    await execFileAsync("git", ["commit", "-qm", "initial"], { cwd: root });
+    await writeFile(join(root, "secret.txt"), "secret two\n");
+    await writeFile(join(root, "*.txt"), "literal untracked\n");
+
+    const request = await createDiffRequest(pi, root, { staged: false, path: "*.txt" });
+    const result = await generateDiff(pi, request);
+    expect(result.patch).toContain("+literal untracked");
+    expect(result.patch).not.toContain("secret two");
+  });
+
   it("generates a working-tree diff for a selected path with spaces", async () => {
     const root = await makeRepository();
     const name = "space name.ts";

@@ -61,6 +61,7 @@ function describeScope(request: DiffRequest): string {
 
 export async function generateDiff(pi: ExtensionAPI, request: DiffRequest): Promise<DiffPayload> {
   const args = [
+    "--literal-pathspecs",
     "diff",
     "--no-ext-diff",
     "--no-color",
@@ -79,7 +80,7 @@ export async function generateDiff(pi: ExtensionAPI, request: DiffRequest): Prom
 
   let patch = result.stdout;
   if (!patch && request.path && request.pathIsFile && !request.staged && !request.ref) {
-    const tracked = await pi.exec("git", ["ls-files", "--error-unmatch", "--", request.path], {
+    const tracked = await pi.exec("git", ["--literal-pathspecs", "ls-files", "--error-unmatch", "--", request.path], {
       cwd: request.repositoryRoot,
       timeout: GIT_TIMEOUT_MS,
     });
