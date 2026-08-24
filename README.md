@@ -27,6 +27,16 @@ The viewer toolbar can switch between split and unified layouts, wrap long lines
 
 Type `/diff @` and continue typing to use Pi's built-in fuzzy file search. Select a result normally; the extension accepts both `@path` and Pi's quoted `@"path with spaces"` form. The extension does not replace Pi's autocomplete provider. Plain path completion with Tab also remains available.
 
+## Install
+
+Install the published package:
+
+```bash
+pi install npm:@leoc-22/pi-diff
+```
+
+Restart Pi or run `/reload` after installation.
+
 ## Install locally
 
 Install dependencies and build the browser client:
@@ -58,7 +68,7 @@ pnpm check  # TypeScript
 pnpm build  # check plus production Vite client build
 ```
 
-The extension source is loaded directly by Pi through `index.ts`. Vite only builds the browser application into `dist/client`; rebuild after changing files under `client/`.
+The extension source is loaded directly by Pi through `index.ts`. Vite only builds the browser application into `dist/client`; rebuild after changing files under `client/`. The npm `prepack` script builds this directory and includes it in the published package, while `dist/` remains excluded from Git.
 
 ## Architecture and privacy
 
