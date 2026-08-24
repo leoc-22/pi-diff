@@ -50,4 +50,18 @@ describe("DiffViewerServer", () => {
     await expect(activeServer.close()).resolves.toBeUndefined();
     await expect(activeServer.close()).resolves.toBeUndefined();
   });
+
+  it("shares concurrent startup and closes the only listener", async () => {
+    activeServer = new DiffViewerServer(pi);
+    const [firstUrl, secondUrl] = await Promise.all([
+      activeServer.start(),
+      activeServer.start(),
+    ]);
+
+    expect(secondUrl).toBe(firstUrl);
+    await expect(fetch(firstUrl)).resolves.toMatchObject({ status: 200 });
+
+    await activeServer.close();
+    await expect(fetch(firstUrl)).rejects.toThrow();
+  });
 });

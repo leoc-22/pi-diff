@@ -55,6 +55,7 @@ export class DiffViewerServer {
   private server: Server | undefined;
   private request: DiffRequest | undefined;
   private baseUrl: string | undefined;
+  private starting: Promise<string> | undefined;
   private closing: Promise<void> | undefined;
 
   constructor(private readonly pi: ExtensionAPI) {}
@@ -63,8 +64,20 @@ export class DiffViewerServer {
     this.request = request;
   }
 
-  async start(): Promise<string> {
-    if (this.baseUrl) return this.baseUrl;
+  start(): Promise<string> {
+    if (this.baseUrl) return Promise.resolve(this.baseUrl);
+    if (this.starting) return this.starting;
+
+    const starting = this.startServer();
+    this.starting = starting;
+    const clearStarting = () => {
+      if (this.starting === starting) this.starting = undefined;
+    };
+    void starting.then(clearStarting, clearStarting);
+    return starting;
+  }
+
+  private async startServer(): Promise<string> {
     await readFile(resolve(ASSETS_DIRECTORY, "index.html"));
 
     const server = createServer((request, response) => {
