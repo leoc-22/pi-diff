@@ -30,15 +30,25 @@ describe("resolveRepositoryPath", () => {
     });
   });
 
-  it("rejects lexical traversal, missing paths, and symlinks outside the worktree", async () => {
+  it("allows missing paths when their nearest existing ancestor is inside the worktree", async () => {
+    const root = await mkdtemp(join(tmpdir(), "pi-diff-root-"));
+
+    await expect(resolveRepositoryPath(root, root, "deleted/nested/file.ts")).resolves.toMatchObject({
+      gitPath: "deleted/nested/file.ts",
+      isFile: false,
+    });
+  });
+
+  it("rejects lexical traversal and symlinks outside the worktree", async () => {
     const root = await mkdtemp(join(tmpdir(), "pi-diff-root-"));
     const outside = await mkdtemp(join(tmpdir(), "pi-diff-outside-"));
     const outsideFile = join(outside, "secret.ts");
     await writeFile(outsideFile, "secret\n");
     await symlink(outsideFile, join(root, "external-link.ts"));
+    await symlink(outside, join(root, "external-directory"));
 
     await expect(resolveRepositoryPath(root, root, "../outside.ts")).rejects.toThrow("outside");
-    await expect(resolveRepositoryPath(root, root, "missing.ts")).rejects.toThrow("does not exist");
     await expect(resolveRepositoryPath(root, root, "external-link.ts")).rejects.toThrow("resolves outside");
+    await expect(resolveRepositoryPath(root, root, "external-directory/missing.ts")).rejects.toThrow("resolves outside");
   });
 });

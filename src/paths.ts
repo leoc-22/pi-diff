@@ -1,5 +1,5 @@
 import { realpath, stat } from "node:fs/promises";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 
 export function isPathInside(root: string, candidate: string): boolean {
   const pathFromRoot = relative(resolve(root), resolve(candidate));
@@ -10,6 +10,26 @@ export interface RepositoryPath {
   absolutePath: string;
   gitPath: string;
   isFile: boolean;
+}
+
+function isMissingPathError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error
+    && "code" in error
+    && (error.code === "ENOENT" || error.code === "ENOTDIR");
+}
+
+async function resolveNearestExistingAncestor(path: string): Promise<string> {
+  let current = path;
+  while (true) {
+    try {
+      return await realpath(current);
+    } catch (error) {
+      if (!isMissingPathError(error)) throw error;
+      const parent = dirname(current);
+      if (parent === current) throw error;
+      current = parent;
+    }
+  }
 }
 
 export async function resolveRepositoryPath(
@@ -28,17 +48,18 @@ export async function resolveRepositoryPath(
     throw new Error("The selected path is outside the current Git worktree.");
   }
 
-  let canonicalCandidate: string;
+  let canonicalCandidate: string | undefined;
   try {
     canonicalCandidate = await realpath(candidate);
-  } catch {
-    throw new Error(`The selected path does not exist: ${selectedPath}`);
+  } catch (error) {
+    if (!isMissingPathError(error)) throw error;
   }
-  if (!isPathInside(canonicalRoot, canonicalCandidate)) {
+  const containmentTarget = canonicalCandidate ?? await resolveNearestExistingAncestor(candidate);
+  if (!isPathInside(canonicalRoot, containmentTarget)) {
     throw new Error("The selected path resolves outside the current Git worktree.");
   }
 
-  const info = await stat(canonicalCandidate);
+  const isFile = canonicalCandidate ? (await stat(canonicalCandidate)).isFile() : false;
   const gitPath = relative(canonicalRoot, candidate).split(sep).join("/") || ".";
-  return { absolutePath: candidate, gitPath, isFile: info.isFile() };
+  return { absolutePath: candidate, gitPath, isFile };
 }

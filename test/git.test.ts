@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { parsePatchFiles } from "@pierre/diffs";
 import { execFile } from "node:child_process";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -40,6 +40,21 @@ async function makeRepository(): Promise<string> {
 }
 
 describe("Git diff generation", () => {
+  it("generates a scoped staged diff for a deleted file", async () => {
+    const root = await makeRepository();
+    const name = "deleted.ts";
+    await writeFile(join(root, name), "export const removed = true;\n");
+    await execFileAsync("git", ["add", "--", name], { cwd: root });
+    await execFileAsync("git", ["commit", "-qm", "initial"], { cwd: root });
+    await rm(join(root, name));
+    await execFileAsync("git", ["add", "-u", "--", name], { cwd: root });
+
+    const request = await createDiffRequest(pi, root, { staged: true, path: name });
+    const result = await generateDiff(pi, request);
+    expect(result.patch).toContain("deleted file mode");
+    expect(result.patch).toContain("-export const removed = true;");
+  });
+
   it("generates a working-tree diff for a selected path with spaces", async () => {
     const root = await makeRepository();
     const name = "space name.ts";
