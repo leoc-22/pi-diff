@@ -73,6 +73,8 @@ jobs:
 
       - name: Publish package
         if: steps.package.outputs.publish == 'true'
-        run: npm publish --provenance --access public
+        # The package was built above. Avoid running prepack again while the
+        # long-lived registry credential is present in the environment.
+        run: npm publish --ignore-scripts --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
