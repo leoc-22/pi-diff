@@ -4,13 +4,13 @@ import { FileTree, useFileTree } from "@pierre/trees/react";
 import {
   StrictMode,
   type CSSProperties,
-  useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
+import { createSingleFlight } from "./single-flight.ts";
 import { createTreeGitStatus } from "./tree.ts";
 
 type Layout = "unified" | "split";
@@ -96,7 +96,7 @@ function App() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [activePath, setActivePath] = useState<string>();
 
-  const refresh = useCallback(async () => {
+  const refresh = useMemo(() => createSingleFlight(async () => {
     setLoading(true);
     try {
       const response = await fetch("api/diff", { cache: "no-store" });
@@ -109,7 +109,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }), []);
 
   useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => {
