@@ -1,0 +1,111 @@
+:root {
+  color-scheme: light dark;
+  font-family: "Berkeley Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: #f5f7fa;
+  color: #172033;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { min-width: 320px; min-height: 100%; margin: 0; }
+body { background: inherit; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: wait; opacity: 0.65; }
+
+main { height: 100vh; min-height: 32rem; display: flex; overflow: hidden; flex-direction: column; }
+.toolbar {
+  z-index: 10;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #d7dce5;
+  background: color-mix(in srgb, #ffffff 94%, transparent);
+  backdrop-filter: blur(12px);
+}
+.identity { min-width: 0; }
+h1 { margin: 0; font-size: 0.95rem; letter-spacing: 0.01em; }
+.identity p { margin: 0.2rem 0 0; max-width: 65vw; overflow: hidden; color: #657087; font-size: 0.72rem; text-overflow: ellipsis; white-space: nowrap; }
+.controls { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: flex-end; }
+.segmented { display: inline-flex; overflow: hidden; border: 1px solid #c8ceda; border-radius: 7px; }
+.segmented button { border: 0; border-right: 1px solid #c8ceda; padding: 0.35rem 0.65rem; background: #fff; color: inherit; }
+.segmented button:last-child { border-right: 0; }
+.segmented button.active { background: #315efb; color: white; }
+.toggle { display: inline-flex; gap: 0.35rem; align-items: center; font-size: 0.78rem; white-space: nowrap; }
+.refresh { border: 1px solid #c8ceda; border-radius: 7px; padding: 0.35rem 0.7rem; background: #fff; color: inherit; }
+
+.workspace {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(220px, 310px) minmax(0, 1fr);
+  overflow: hidden;
+}
+.sidebar {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 1px solid #d7dce5;
+  background: #fff;
+}
+.sidebar-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.8rem;
+  border-bottom: 1px solid #e2e6ed;
+  font-size: 0.76rem;
+}
+.sidebar-header span {
+  min-width: 1.5rem;
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+  background: #edf1f7;
+  color: #657087;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.sidebar-tree { min-height: 0; flex: 1; overflow: hidden; }
+.sidebar-tree > * { display: block; width: 100%; height: 100%; }
+.content { min-width: 0; min-height: 0; overflow: auto; background: #fff; }
+.diff-surface {
+  min-width: 0;
+  --diffs-font-family: "Berkeley Mono", ui-monospace, monospace;
+  --diffs-header-font-family: "Berkeley Mono", ui-monospace, monospace;
+}
+.state { display: grid; height: 100%; min-height: 20rem; place-items: center; align-content: center; gap: 0.4rem; padding: 2rem; color: #657087; text-align: center; }
+.state strong { color: #172033; font-size: 1.1rem; }
+.state.error strong { color: #b42318; }
+footer { display: flex; flex: 0 0 auto; justify-content: space-between; gap: 1rem; padding: 0.65rem 1rem; border-top: 1px solid #d7dce5; color: #657087; font-size: 0.72rem; }
+.state-warning { color: #b54708; }
+
+@media (prefers-color-scheme: dark) {
+  :root { background: #0c1018; color: #e6eaf2; }
+  .toolbar { border-color: #2a3241; background: color-mix(in srgb, #111722 94%, transparent); }
+  .identity p, footer, .state { color: #929db1; }
+  .segmented, .segmented button, .refresh { border-color: #394356; }
+  .segmented button, .refresh { background: #18202d; color: #e6eaf2; }
+  .segmented button.active { background: #6384ff; color: #081020; }
+  .sidebar, .content { border-color: #2a3241; background: #111; }
+  .sidebar-header { border-color: #2a3241; }
+  .sidebar-header span { background: #222b3a; color: #aab3c3; }
+  .state strong { color: #e6eaf2; }
+  .state.error strong { color: #ff8a80; }
+  footer { border-color: #2a3241; }
+  .state-warning { color: #fdb022; }
+}
+
+@media (max-width: 760px) {
+  main { height: auto; min-height: 100vh; overflow: visible; }
+  .toolbar { align-items: flex-start; flex-direction: column; }
+  .identity p { max-width: calc(100vw - 2rem); }
+  .controls { justify-content: flex-start; }
+  .workspace { display: block; overflow: visible; }
+  .sidebar { height: 15rem; border-right: 0; border-bottom: 1px solid #d7dce5; }
+  .content { height: 70vh; min-height: 28rem; }
+  footer { flex-direction: column; }
+}

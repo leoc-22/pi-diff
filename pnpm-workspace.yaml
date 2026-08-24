@@ -1,0 +1,17 @@
+allowBuilds:
+  '@google/genai': true
+  esbuild: true
+  protobufjs: true
+packageExtensions:
+  '@pierre/trees@1.0.0-beta.6':
+    dependencies:
+      '@pierre/theme': 1.1.0
+minimumReleaseAgeExclude:
+  - '@earendil-works/pi-agent-core@0.84.3'
+  - '@earendil-works/pi-ai@0.84.3'
+  - '@earendil-works/pi-client@0.84.3'
+  - '@earendil-works/pi-coding-agent@0.84.3'
+  - '@earendil-works/pi-protocol@0.84.3'
+  - '@earendil-works/pi-telemetry@0.84.3'
+  - '@earendil-works/pi-tui@0.84.3'
+  - '@pierre/diffs@1.3.6'
