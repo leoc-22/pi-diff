@@ -59,6 +59,78 @@ function describeScope(request: DiffRequest): string {
   return `working tree${target}`;
 }
 
+function nullSeparatedPaths(output: string): string[] {
+  return output.split("\0").filter((path) => path.length > 0);
+}
+
+async function diffAgainstEmptyFile(
+  pi: ExtensionAPI,
+  repositoryRoot: string,
+  path: string,
+): Promise<string> {
+  const untracked = await pi.exec(
+    "git",
+    [
+      "diff",
+      "--no-index",
+      "--no-color",
+      "--src-prefix=a/",
+      "--dst-prefix=b/",
+      "--",
+      "/dev/null",
+      path,
+    ],
+    { cwd: repositoryRoot, timeout: GIT_TIMEOUT_MS },
+  );
+  if (untracked.code !== 0 && untracked.code !== 1) {
+    throw gitFailure(untracked.stderr, `git diff --no-index failed with exit code ${untracked.code}.`);
+  }
+  return untracked.stdout;
+}
+
+async function untrackedFilePatch(
+  pi: ExtensionAPI,
+  repositoryRoot: string,
+  path: string,
+): Promise<string> {
+  const tracked = await pi.exec("git", ["ls-files", "--error-unmatch", "--", path], {
+    cwd: repositoryRoot,
+    timeout: GIT_TIMEOUT_MS,
+  });
+  if (tracked.code === 0) return "";
+  return diffAgainstEmptyFile(pi, repositoryRoot, path);
+}
+
+async function untrackedDirectoryPatch(
+  pi: ExtensionAPI,
+  repositoryRoot: string,
+  directory: string,
+): Promise<string> {
+  const tracked = await pi.exec("git", ["ls-files", "--error-unmatch", "--", directory], {
+    cwd: repositoryRoot,
+    timeout: GIT_TIMEOUT_MS,
+  });
+  // A directory that already contains tracked files keeps ordinary git diff output.
+  if (tracked.code === 0) return "";
+
+  const listed = await pi.exec(
+    "git",
+    ["ls-files", "-z", "--others", "--exclude-standard", "--", directory],
+    { cwd: repositoryRoot, timeout: GIT_TIMEOUT_MS },
+  );
+  if (listed.code !== 0) {
+    throw gitFailure(listed.stderr, `git ls-files failed with exit code ${listed.code}.`);
+  }
+
+  const patches: string[] = [];
+  for (const file of nullSeparatedPaths(listed.stdout)) {
+    const selected = await resolveRepositoryPath(repositoryRoot, repositoryRoot, file);
+    if (!selected.isFile) continue;
+    patches.push(await diffAgainstEmptyFile(pi, repositoryRoot, selected.gitPath));
+  }
+  return patches.join("");
+}
+
 export async function generateDiff(pi: ExtensionAPI, request: DiffRequest): Promise<DiffPayload> {
   const args = [
     "diff",
@@ -78,30 +150,11 @@ export async function generateDiff(pi: ExtensionAPI, request: DiffRequest): Prom
   }
 
   let patch = result.stdout;
-  if (!patch && request.path && request.pathIsFile && !request.staged && !request.ref) {
-    const tracked = await pi.exec("git", ["ls-files", "--error-unmatch", "--", request.path], {
-      cwd: request.repositoryRoot,
-      timeout: GIT_TIMEOUT_MS,
-    });
-    if (tracked.code !== 0) {
-      const untracked = await pi.exec(
-        "git",
-        [
-          "diff",
-          "--no-index",
-          "--no-color",
-          "--src-prefix=a/",
-          "--dst-prefix=b/",
-          "--",
-          "/dev/null",
-          request.path,
-        ],
-        { cwd: request.repositoryRoot, timeout: GIT_TIMEOUT_MS },
-      );
-      if (untracked.code !== 0 && untracked.code !== 1) {
-        throw gitFailure(untracked.stderr, `git diff --no-index failed with exit code ${untracked.code}.`);
-      }
-      patch = untracked.stdout;
+  if (!patch && request.path && !request.staged && !request.ref) {
+    if (request.pathIsFile) {
+      patch = await untrackedFilePatch(pi, request.repositoryRoot, request.path);
+    } else if (request.pathIsFile === false) {
+      patch = await untrackedDirectoryPatch(pi, request.repositoryRoot, request.path);
     }
   }
 

@@ -20,6 +20,7 @@ A [Pi](https://github.com/earendil-works/pi-mono) extension that opens local Git
 - `--ref` passes one revision or range argument to `git diff`.
 - A path limits the diff to one file or directory.
 - An untracked single file is rendered as a new file in normal working-tree mode.
+- A path that points at an untracked directory includes the non-ignored untracked files under that directory as new files. Plain paths, `@path`, and `@"path"` all work. `--staged` and `--ref` still show only their tracked diffs.
 
 The viewer toolbar can switch between split and unified layouts, wrap long lines, show or hide changed-line backgrounds, and enable automatic refresh.
 
@@ -89,6 +90,6 @@ There is no upload, telemetry, remote asset, or browser endpoint that executes c
 - The viewer is a web page, not an embedded Pi terminal component.
 - The left sidebar lists files present in the current patch; selecting a file switches the main diff surface.
 - Normal Git semantics apply: `/diff` excludes staged changes, `--staged` excludes unstaged changes, and ignored files are not included in an all-files diff.
-- Untracked-file fallback is limited to a selected single file, not an untracked directory or an unfiltered `/diff`.
+- An unfiltered `/diff` does not include every untracked file. A selected tracked directory also keeps its ordinary Git diff and does not gain untracked files.
 - Binary-only patches may not have renderable text hunks.
 - The browser client must be rebuilt after client-side changes.
